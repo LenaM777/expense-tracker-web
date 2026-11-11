@@ -1,71 +1,29 @@
-import { useState, type FormEvent } from "react";
-
-const API_URL = "http://localhost:3000";
+import { useState } from "react";
+import { LoginForm } from "./components/LoginForm";
+import { clearToken, getToken, saveToken } from "./auth";
 
 function App() {
-  const [token, setToken] = useState<string | null>(
-    localStorage.getItem("token")
-  );
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [token, setToken] = useState<string | null>(getToken());
 
-  async function handleLogin(e: FormEvent) {
-    e.preventDefault();
-    setError("");
-
-    try {
-      const res = await fetch(`${API_URL}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.message);
-        return;
-      }
-
-      localStorage.setItem("token", data.token);
-      setToken(data.token);
-    } catch {
-      setError("Сервер недоступний");
-    }
+  function handleLogin(newToken: string) {
+    saveToken(newToken);
+    setToken(newToken);
   }
 
   function handleLogout() {
-    localStorage.removeItem("token");
+    clearToken();
     setToken(null);
   }
 
-  if (token) {
-    return (
-      <div>
-        <p>Ви увійшли</p>
-        <button onClick={handleLogout}>Вийти</button>
-      </div>
-    );
+  if (!token) {
+    return <LoginForm onLogin={handleLogin} />;
   }
 
   return (
-    <form onSubmit={handleLogin}>
-      <h1>Вхід</h1>
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <input
-        type="password"
-        placeholder="Пароль"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
-      <button type="submit">Увійти</button>
-      {error && <p>{error}</p>}
-    </form>
+    <div>
+      <p>Ви увійшли</p>
+      <button onClick={handleLogout}>Вийти</button>
+    </div>
   );
 }
 
