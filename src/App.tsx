@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { LoginForm } from "./components/LoginForm";
+import { ExpenseList } from "./components/ExpenseList";
 import { clearToken, getToken, saveToken } from "./auth";
+
 
 function App() {
   const [token, setToken] = useState<string | null>(getToken());
@@ -21,8 +23,9 @@ function App() {
 
   return (
     <div>
-      <p>Ви увійшли</p>
       <button onClick={handleLogout}>Вийти</button>
+      <h1>Мої витрати</h1>
+      <ExpenseList token={token} onUnauthorized={handleLogout} />
     </div>
   );
 }
