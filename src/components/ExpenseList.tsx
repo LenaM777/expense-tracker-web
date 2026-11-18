@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
-import { getExpenses, UnauthorizedError, type Expense } from "../api";
-import { ExpenseForm } from "./ExpenseForm";
+import {
+  deleteExpense,
+  getExpenses,
+  UnauthorizedError,
+  type Expense,
+} from "../api";
 import { categoryLabel } from "../categories";
+import { ExpenseForm } from "./ExpenseForm";
 
 type Props = {
   token: string;
@@ -26,6 +31,22 @@ export function ExpenseList({ token, onUnauthorized }: Props) {
       .finally(() => setLoading(false));
   }, [token, onUnauthorized]);
 
+  async function handleDelete(id: number) {
+    if (!window.confirm("Видалити цю витрату?")) return;
+    setError("");
+
+    try {
+      await deleteExpense(token, id);
+      setExpenses((prev) => prev.filter((e) => e.id !== id));
+    } catch (err) {
+      if (err instanceof UnauthorizedError) {
+        onUnauthorized();
+        return;
+      }
+      setError(err instanceof Error ? err.message : "Невідома помилка");
+    }
+  }
+
   return (
     <div>
       <ExpenseForm
@@ -43,7 +64,8 @@ export function ExpenseList({ token, onUnauthorized }: Props) {
       <ul>
         {expenses.map((e) => (
           <li key={e.id}>
-            {e.title}: {e.amount} ({categoryLabel(e.category)})
+            {e.title}: {e.amount} ({categoryLabel(e.category)}){" "}
+            <button onClick={() => handleDelete(e.id)}>Видалити</button>
           </li>
         ))}
       </ul>

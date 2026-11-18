@@ -88,3 +88,24 @@ export async function createExpense(
 
   return data;
 }
+
+export async function deleteExpense(token: string, id: number): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/expenses/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch {
+    throw new Error("Сервер недоступний");
+  }
+
+  if (res.status === 401) {
+    throw new UnauthorizedError("Сесія закінчилась");
+  }
+
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.message);
+  }
+}
