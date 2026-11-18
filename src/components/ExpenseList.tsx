@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getExpenses, UnauthorizedError, type Expense } from "../api";
 import { ExpenseForm } from "./ExpenseForm";
+import { categoryLabel } from "../categories";
 
 type Props = {
   token: string;
@@ -42,7 +43,7 @@ export function ExpenseList({ token, onUnauthorized }: Props) {
       <ul>
         {expenses.map((e) => (
           <li key={e.id}>
-            {e.title}: {e.amount} ({e.category})
+            {e.title}: {e.amount} ({categoryLabel(e.category)})
           </li>
         ))}
       </ul>

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { createExpense, UnauthorizedError, type Expense } from "../api";
+import { CATEGORIES } from "../categories";
 
 type Props = {
   token: string;
@@ -10,7 +11,7 @@ type Props = {
 export function ExpenseForm({ token, onCreated, onUnauthorized }: Props) {
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState(CATEGORIES[0].value);
   const [error, setError] = useState("");
 
   async function handleSubmit(e: FormEvent) {
@@ -26,7 +27,7 @@ export function ExpenseForm({ token, onCreated, onUnauthorized }: Props) {
       onCreated(expense);
       setTitle("");
       setAmount("");
-      setCategory("");
+      setCategory(CATEGORIES[0].value);
     } catch (err) {
       if (err instanceof UnauthorizedError) {
         onUnauthorized();
@@ -50,11 +51,13 @@ export function ExpenseForm({ token, onCreated, onUnauthorized }: Props) {
         value={amount}
         onChange={(e) => setAmount(e.target.value)}
       />
-      <input
-        placeholder="Категорія"
-        value={category}
-        onChange={(e) => setCategory(e.target.value)}
-      />
+      <select value={category} onChange={(e) => setCategory(e.target.value)}>
+  {CATEGORIES.map((c) => (
+    <option key={c.value} value={c.value}>
+      {c.label}
+    </option>
+  ))}
+</select>
       <button type="submit">Додати</button>
       {error && <p>{error}</p>}
     </form>
