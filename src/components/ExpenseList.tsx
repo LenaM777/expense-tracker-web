@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getExpenses, UnauthorizedError, type Expense } from "../api";
+import { ExpenseForm } from "./ExpenseForm";
 
 type Props = {
   token: string;
@@ -24,17 +25,27 @@ export function ExpenseList({ token, onUnauthorized }: Props) {
       .finally(() => setLoading(false));
   }, [token, onUnauthorized]);
 
-  if (loading) return <p>Завантаження...</p>;
-  if (error) return <p>{error}</p>;
-  if (expenses.length === 0) return <p>Витрат поки немає</p>;
-
   return (
-    <ul>
-      {expenses.map((e) => (
-        <li key={e.id}>
-          {e.title}: {e.amount} ({e.category})
-        </li>
-      ))}
-    </ul>
+    <div>
+      <ExpenseForm
+        token={token}
+        onCreated={(expense) => setExpenses((prev) => [...prev, expense])}
+        onUnauthorized={onUnauthorized}
+      />
+
+      {loading && <p>Завантаження...</p>}
+      {error && <p>{error}</p>}
+      {!loading && !error && expenses.length === 0 && (
+        <p>Витрат поки немає</p>
+      )}
+
+      <ul>
+        {expenses.map((e) => (
+          <li key={e.id}>
+            {e.title}: {e.amount} ({e.category})
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

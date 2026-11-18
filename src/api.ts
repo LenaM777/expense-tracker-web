@@ -52,3 +52,39 @@ export async function getExpenses(token: string): Promise<Expense[]> {
 
   return data;
 }
+
+export type NewExpense = {
+  title: string;
+  amount: number;
+  category: string;
+};
+
+export async function createExpense(
+  token: string,
+  expense: NewExpense
+): Promise<Expense> {
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/expenses`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(expense),
+    });
+  } catch {
+    throw new Error("Сервер недоступний");
+  }
+
+  if (res.status === 401) {
+    throw new UnauthorizedError("Сесія закінчилась");
+  }
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message);
+  }
+
+  return data;
+}
