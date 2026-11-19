@@ -7,6 +7,7 @@ import {
 } from "../api";
 import { ExpenseForm } from "./ExpenseForm";
 import { ExpenseItem } from "./ExpenseItem";
+import { Summary } from "./Summary";
 
 type Props = {
   token: string;
@@ -49,6 +50,7 @@ export function ExpenseList({ token, onUnauthorized }: Props) {
 
   return (
     <div>
+      <Summary token={token} expenses={expenses} onUnauthorized={onUnauthorized} />
       <ExpenseForm
         token={token}
         onCreated={(expense) => setExpenses((prev) => [...prev, expense])}

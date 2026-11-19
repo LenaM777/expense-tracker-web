@@ -140,3 +140,35 @@ export async function updateExpense(
 
   return data;
 }
+
+export type Summary = {
+  total: number;
+  categories: { category: string; total: number }[];
+};
+
+export async function getSummary(
+  token: string,
+  month: string
+): Promise<Summary> {
+  const query = month ? `?month=${encodeURIComponent(month)}` : "";
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/expenses/summary${query}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch {
+    throw new Error("Сервер недоступний");
+  }
+
+  if (res.status === 401) {
+    throw new UnauthorizedError("Сесія закінчилась");
+  }
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message);
+  }
+
+  return data;
+}
