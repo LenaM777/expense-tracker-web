@@ -1,14 +1,12 @@
 import { useState, type FormEvent } from "react";
-import { createExpense, UnauthorizedError, type Expense } from "../api";
+import { createExpense, type Expense } from "../api";
 import { CATEGORIES } from "../categories";
 
 type Props = {
-  token: string;
   onCreated: (expense: Expense) => void;
-  onUnauthorized: () => void;
 };
 
-export function ExpenseForm({ token, onCreated, onUnauthorized }: Props) {
+export function ExpenseForm({ onCreated }: Props) {
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState(CATEGORIES[0].value);
@@ -19,7 +17,7 @@ export function ExpenseForm({ token, onCreated, onUnauthorized }: Props) {
     setError("");
 
     try {
-      const expense = await createExpense(token, {
+      const expense = await createExpense({
         title,
         amount: Number(amount),
         category,
@@ -29,10 +27,6 @@ export function ExpenseForm({ token, onCreated, onUnauthorized }: Props) {
       setAmount("");
       setCategory(CATEGORIES[0].value);
     } catch (err) {
-      if (err instanceof UnauthorizedError) {
-        onUnauthorized();
-        return;
-      }
       setError(err instanceof Error ? err.message : "Невідома помилка");
     }
   }
@@ -52,12 +46,12 @@ export function ExpenseForm({ token, onCreated, onUnauthorized }: Props) {
         onChange={(e) => setAmount(e.target.value)}
       />
       <select value={category} onChange={(e) => setCategory(e.target.value)}>
-  {CATEGORIES.map((c) => (
-    <option key={c.value} value={c.value}>
-      {c.label}
-    </option>
-  ))}
-</select>
+        {CATEGORIES.map((c) => (
+          <option key={c.value} value={c.value}>
+            {c.label}
+          </option>
+        ))}
+      </select>
       <button type="submit">Додати</button>
       {error && <p>{error}</p>}
     </form>

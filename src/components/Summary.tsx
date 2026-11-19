@@ -1,35 +1,24 @@
 import { useEffect, useState } from "react";
-import {
-  getSummary,
-  UnauthorizedError,
-  type Expense,
-  type Summary as SummaryData,
-} from "../api";
+import { getSummary, type Expense, type Summary as SummaryData } from "../api";
 import { categoryLabel } from "../categories";
 
 type Props = {
-  token: string;
   expenses: Expense[];
-  onUnauthorized: () => void;
 };
 
-export function Summary({ token, expenses, onUnauthorized }: Props) {
+export function Summary({ expenses }: Props) {
   const [month, setMonth] = useState("");
   const [data, setData] = useState<SummaryData | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     setError("");
-    getSummary(token, month)
+    getSummary(month)
       .then(setData)
-      .catch((err) => {
-        if (err instanceof UnauthorizedError) {
-          onUnauthorized();
-        } else {
-          setError(err instanceof Error ? err.message : "Невідома помилка");
-        }
-      });
-  }, [token, month, expenses, onUnauthorized]);
+      .catch((err) =>
+        setError(err instanceof Error ? err.message : "Невідома помилка")
+      );
+  }, [month, expenses]);
 
   return (
     <div>

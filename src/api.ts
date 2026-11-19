@@ -1,25 +1,6 @@
+import { clearToken, getToken } from "./auth";
+
 const API_URL = "http://localhost:3000";
-
-export async function login(email: string, password: string): Promise<string> {
-  let res: Response;
-  try {
-    res = await fetch(`${API_URL}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-  } catch {
-    throw new Error("Сервер недоступний");
-  }
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.message);
-  }
-
-  return data.token;
-}
 
 export type Expense = {
   id: number;
@@ -29,146 +10,106 @@ export type Expense = {
   createdAt: string;
 };
 
-export class UnauthorizedError extends Error {}
-
-export async function getExpenses(token: string): Promise<Expense[]> {
-  let res: Response;
-  try {
-    res = await fetch(`${API_URL}/expenses`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-  } catch {
-    throw new Error("Сервер недоступний");
-  }
-
-  if (res.status === 401) {
-    throw new UnauthorizedError("Сесія закінчилась");
-  }
-
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.message);
-  }
-
-  return data;
-}
-
 export type NewExpense = {
   title: string;
   amount: number;
   category: string;
 };
 
-export async function createExpense(
-  token: string,
-  expense: NewExpense
-): Promise<Expense> {
-  let res: Response;
-  try {
-    res = await fetch(`${API_URL}/expenses`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(expense),
-    });
-  } catch {
-    throw new Error("Сервер недоступний");
-  }
-
-  if (res.status === 401) {
-    throw new UnauthorizedError("Сесія закінчилась");
-  }
-
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.message);
-  }
-
-  return data;
-}
-
-export async function deleteExpense(token: string, id: number): Promise<void> {
-  let res: Response;
-  try {
-    res = await fetch(`${API_URL}/expenses/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-  } catch {
-    throw new Error("Сервер недоступний");
-  }
-
-  if (res.status === 401) {
-    throw new UnauthorizedError("Сесія закінчилась");
-  }
-
-  if (!res.ok) {
-    const data = await res.json();
-    throw new Error(data.message);
-  }
-}
-
-export async function updateExpense(
-  token: string,
-  id: number,
-  expense: NewExpense
-): Promise<Expense> {
-  let res: Response;
-  try {
-    res = await fetch(`${API_URL}/expenses/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(expense),
-    });
-  } catch {
-    throw new Error("Сервер недоступний");
-  }
-
-  if (res.status === 401) {
-    throw new UnauthorizedError("Сесія закінчилась");
-  }
-
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.message);
-  }
-
-  return data;
-}
-
 export type Summary = {
   total: number;
   categories: { category: string; total: number }[];
 };
 
-export async function getSummary(
-  token: string,
-  month: string
-): Promise<Summary> {
-  const query = month ? `?month=${encodeURIComponent(month)}` : "";
+export class UnauthorizedError extends Error {}
+
+let unauthorizedHandler: (() => void) | null = null;
+
+export function setUnauthorizedHandler(handler: (() => void) | null) {
+  unauthorizedHandler = handler;
+}
+
+type RequestOptions = {
+  method?: string;
+  body?: unknown;
+  auth?: boolean;
+};
+
+async function request<T>(
+  path: string,
+  options: RequestOptions = {}
+): Promise<T> {
+  const { method = "GET", body, auth = true } = options;
+
+  const headers: Record<string, string> = {};
+  if (body !== undefined) {
+    headers["Content-Type"] = "application/json";
+  }
+  if (auth) {
+    const token = getToken();
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+  }
 
   let res: Response;
   try {
-    res = await fetch(`${API_URL}/expenses/summary${query}`, {
-      headers: { Authorization: `Bearer ${token}` },
+    res = await fetch(`${API_URL}${path}`, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   } catch {
     throw new Error("Сервер недоступний");
   }
 
-  if (res.status === 401) {
+  if (res.status === 401 && auth) {
+    clearToken();
+    unauthorizedHandler?.();
     throw new UnauthorizedError("Сесія закінчилась");
   }
 
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.message);
+  if (res.status === 204) {
+    return undefined as T;
   }
 
-  return data;
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(data?.message ?? "Помилка сервера");
+  }
+
+  return data as T;
+}
+
+export async function login(email: string, password: string): Promise<string> {
+  const data = await request<{ token: string }>("/auth/login", {
+    method: "POST",
+    body: { email, password },
+    auth: false,
+  });
+  return data.token;
+}
+
+export function getExpenses(): Promise<Expense[]> {
+  return request<Expense[]>("/expenses");
+}
+
+export function createExpense(expense: NewExpense): Promise<Expense> {
+  return request<Expense>("/expenses", { method: "POST", body: expense });
+}
+
+export function updateExpense(
+  id: number,
+  expense: NewExpense
+): Promise<Expense> {
+  return request<Expense>(`/expenses/${id}`, { method: "PUT", body: expense });
+}
+
+export function deleteExpense(id: number): Promise<void> {
+  return request<void>(`/expenses/${id}`, { method: "DELETE" });
+}
+
+export function getSummary(month: string): Promise<Summary> {
+  const query = month ? `?month=${encodeURIComponent(month)}` : "";
+  return request<Summary>(`/expenses/summary${query}`);
 }

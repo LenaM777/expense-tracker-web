@@ -1,22 +1,14 @@
 import { useState, type FormEvent } from "react";
-import { updateExpense, UnauthorizedError, type Expense } from "../api";
+import { updateExpense, type Expense } from "../api";
 import { CATEGORIES, categoryLabel } from "../categories";
 
 type Props = {
   expense: Expense;
-  token: string;
   onUpdated: (expense: Expense) => void;
   onDelete: (id: number) => void;
-  onUnauthorized: () => void;
 };
 
-export function ExpenseItem({
-  expense,
-  token,
-  onUpdated,
-  onDelete,
-  onUnauthorized,
-}: Props) {
+export function ExpenseItem({ expense, onUpdated, onDelete }: Props) {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(expense.title);
   const [amount, setAmount] = useState(String(expense.amount));
@@ -36,7 +28,7 @@ export function ExpenseItem({
     setError("");
 
     try {
-      const updated = await updateExpense(token, expense.id, {
+      const updated = await updateExpense(expense.id, {
         title,
         amount: Number(amount),
         category,
@@ -44,10 +36,6 @@ export function ExpenseItem({
       onUpdated(updated);
       setEditing(false);
     } catch (err) {
-      if (err instanceof UnauthorizedError) {
-        onUnauthorized();
-        return;
-      }
       setError(err instanceof Error ? err.message : "Невідома помилка");
     }
   }

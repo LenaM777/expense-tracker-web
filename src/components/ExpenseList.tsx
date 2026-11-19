@@ -1,60 +1,41 @@
 import { useEffect, useState } from "react";
-import {
-  deleteExpense,
-  getExpenses,
-  UnauthorizedError,
-  type Expense,
-} from "../api";
+import { deleteExpense, getExpenses, type Expense } from "../api";
 import { ExpenseForm } from "./ExpenseForm";
 import { ExpenseItem } from "./ExpenseItem";
 import { Summary } from "./Summary";
 
-type Props = {
-  token: string;
-  onUnauthorized: () => void;
-};
-
-export function ExpenseList({ token, onUnauthorized }: Props) {
+export function ExpenseList() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    getExpenses(token)
+    getExpenses()
       .then(setExpenses)
-      .catch((err) => {
-        if (err instanceof UnauthorizedError) {
-          onUnauthorized();
-        } else {
-          setError(err instanceof Error ? err.message : "Невідома помилка");
-        }
-      })
+      .catch((err) =>
+        setError(err instanceof Error ? err.message : "Невідома помилка")
+      )
       .finally(() => setLoading(false));
-  }, [token, onUnauthorized]);
+  }, []);
 
   async function handleDelete(id: number) {
     if (!window.confirm("Видалити цю витрату?")) return;
     setError("");
 
     try {
-      await deleteExpense(token, id);
+      await deleteExpense(id);
       setExpenses((prev) => prev.filter((e) => e.id !== id));
     } catch (err) {
-      if (err instanceof UnauthorizedError) {
-        onUnauthorized();
-        return;
-      }
       setError(err instanceof Error ? err.message : "Невідома помилка");
     }
   }
 
   return (
     <div>
-      <Summary token={token} expenses={expenses} onUnauthorized={onUnauthorized} />
+      <Summary expenses={expenses} />
+
       <ExpenseForm
-        token={token}
         onCreated={(expense) => setExpenses((prev) => [...prev, expense])}
-        onUnauthorized={onUnauthorized}
       />
 
       {loading && <p>Завантаження...</p>}
@@ -68,14 +49,12 @@ export function ExpenseList({ token, onUnauthorized }: Props) {
           <ExpenseItem
             key={e.id}
             expense={e}
-            token={token}
             onUpdated={(updated) =>
               setExpenses((prev) =>
                 prev.map((x) => (x.id === updated.id ? updated : x))
               )
             }
             onDelete={handleDelete}
-            onUnauthorized={onUnauthorized}
           />
         ))}
       </ul>
