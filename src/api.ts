@@ -109,3 +109,34 @@ export async function deleteExpense(token: string, id: number): Promise<void> {
     throw new Error(data.message);
   }
 }
+
+export async function updateExpense(
+  token: string,
+  id: number,
+  expense: NewExpense
+): Promise<Expense> {
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/expenses/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(expense),
+    });
+  } catch {
+    throw new Error("Сервер недоступний");
+  }
+
+  if (res.status === 401) {
+    throw new UnauthorizedError("Сесія закінчилась");
+  }
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message);
+  }
+
+  return data;
+}

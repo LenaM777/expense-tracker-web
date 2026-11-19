@@ -5,8 +5,8 @@ import {
   UnauthorizedError,
   type Expense,
 } from "../api";
-import { categoryLabel } from "../categories";
 import { ExpenseForm } from "./ExpenseForm";
+import { ExpenseItem } from "./ExpenseItem";
 
 type Props = {
   token: string;
@@ -63,10 +63,18 @@ export function ExpenseList({ token, onUnauthorized }: Props) {
 
       <ul>
         {expenses.map((e) => (
-          <li key={e.id}>
-            {e.title}: {e.amount} ({categoryLabel(e.category)}){" "}
-            <button onClick={() => handleDelete(e.id)}>Видалити</button>
-          </li>
+          <ExpenseItem
+            key={e.id}
+            expense={e}
+            token={token}
+            onUpdated={(updated) =>
+              setExpenses((prev) =>
+                prev.map((x) => (x.id === updated.id ? updated : x))
+              )
+            }
+            onDelete={handleDelete}
+            onUnauthorized={onUnauthorized}
+          />
         ))}
       </ul>
     </div>
