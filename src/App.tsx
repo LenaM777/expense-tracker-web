@@ -1,33 +1,42 @@
 import { useEffect, useState } from "react";
 import { LoginForm } from "./components/LoginForm";
 import { ExpenseList } from "./components/ExpenseList";
-import { setUnauthorizedHandler } from "./api";
-import { clearToken, getToken, saveToken } from "./auth";
+import { getMe, logout, setUnauthorizedHandler, type User } from "./api";
 
 function App() {
-  const [token, setToken] = useState<string | null>(getToken());
+  const [user, setUser] = useState<User | null>(null);
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    setUnauthorizedHandler(() => setToken(null));
+    setUnauthorizedHandler(() => setUser(null));
+
+    getMe()
+      .then(setUser)
+      .catch(() => setUser(null))
+      .finally(() => setChecking(false));
+
     return () => setUnauthorizedHandler(null);
   }, []);
 
-  function handleLogin(newToken: string) {
-    saveToken(newToken);
-    setToken(newToken);
+  async function handleLogout() {
+    try {
+      await logout();
+    } finally {
+      setUser(null);
+    }
   }
 
-  function handleLogout() {
-    clearToken();
-    setToken(null);
+  if (checking) {
+    return <p>Завантаження...</p>;
   }
 
-  if (!token) {
-    return <LoginForm onLogin={handleLogin} />;
+  if (!user) {
+    return <LoginForm onLogin={setUser} />;
   }
 
   return (
     <div>
+      <p>{user.email}</p>
       <button onClick={handleLogout}>Вийти</button>
       <h1>Мої витрати</h1>
       <ExpenseList />

@@ -1,6 +1,9 @@
-import { clearToken, getToken } from "./auth";
-
 const API_URL = "http://localhost:3000";
+
+export type User = {
+  id: number;
+  email: string;
+};
 
 export type Expense = {
   id: number;
@@ -45,18 +48,13 @@ async function request<T>(
   if (body !== undefined) {
     headers["Content-Type"] = "application/json";
   }
-  if (auth) {
-    const token = getToken();
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
-  }
 
   let res: Response;
   try {
     res = await fetch(`${API_URL}${path}`, {
       method,
       headers,
+      credentials: "include",
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   } catch {
@@ -64,7 +62,6 @@ async function request<T>(
   }
 
   if (res.status === 401 && auth) {
-    clearToken();
     unauthorizedHandler?.();
     throw new UnauthorizedError("Сесія закінчилась");
   }
@@ -81,13 +78,20 @@ async function request<T>(
   return data as T;
 }
 
-export async function login(email: string, password: string): Promise<string> {
-  const data = await request<{ token: string }>("/auth/login", {
+export function login(email: string, password: string): Promise<User> {
+  return request<User>("/auth/login", {
     method: "POST",
     body: { email, password },
     auth: false,
   });
-  return data.token;
+}
+
+export function logout(): Promise<void> {
+  return request<void>("/auth/logout", { method: "POST", auth: false });
+}
+
+export function getMe(): Promise<User> {
+  return request<User>("/auth/me", { auth: false });
 }
 
 export function getExpenses(): Promise<Expense[]> {

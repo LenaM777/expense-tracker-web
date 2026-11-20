@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from "react";
-import { login } from "../api";
+import { login, type User } from "../api";
 
 type Props = {
-  onLogin: (token: string) => void;
+  onLogin: (user: User) => void;
 };
 
 export function LoginForm({ onLogin }: Props) {
@@ -15,8 +15,8 @@ export function LoginForm({ onLogin }: Props) {
     setError("");
 
     try {
-      const token = await login(email, password);
-      onLogin(token);
+      const user = await login(email, password);
+      onLogin(user);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Невідома помилка");
     }
